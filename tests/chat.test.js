@@ -98,3 +98,10 @@ test('handles malformed JSON gracefully', async () => {
   expect(result.answer).toBe('not json at all');
   expect(result.suggestions).toEqual([]);
 });
+
+test('strips markdown code fences from response', async () => {
+  const client = makeClient('```json\n' + JSON.stringify({ answer: 'Wi-Fi is pass123.', suggestions: ['Q1?'] }) + '\n```');
+  const result = await chat({ message: 'Test', _client: client });
+  expect(result.answer).toBe('Wi-Fi is pass123.');
+  expect(result.suggestions).toEqual(['Q1?']);
+});
