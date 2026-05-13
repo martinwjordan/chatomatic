@@ -1,0 +1,13 @@
+node_modules/
+.env
+.git/
+.claude/
+.superpowers/
+skills/
+tests/
+docs/
+scripts/
+GAPS.md
+CLAUDE.md
+MEMORY.md
+SPEC.md
