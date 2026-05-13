@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chatomatic</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <header id="header">
+      <div class="header-text">
+        <div id="house-name">Loading...</div>
+        <p class="tagline">Ask me anything about your stay</p>
+      </div>
+      <button id="arrived-btn" style="display:none">🏠 I've arrived</button>
+    </header>
+    <div id="messages-container">
+      <div id="starter-chips"></div>
+      <div id="messages"></div>
+      <div id="typing" style="display:none">💬 Typing...</div>
+      <div id="suggestions"></div>
+    </div>
+    <div id="input-bar">
+      <input id="input" type="text" placeholder="Ask a question..." autocomplete="off">
+      <button id="send-btn">&#10148;</button>
+    </div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
