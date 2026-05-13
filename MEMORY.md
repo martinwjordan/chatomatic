@@ -10,11 +10,33 @@ Living document. Updated as decisions are made, revised, or reversed. Most recen
 
 **Why it exists:** More interactive than a static site; the question log tells the owner what guests care about and what's missing from the guide.
 
-**Current status:** Design spec complete (SPEC.md). Ready for implementation planning.
+**Current status:** Implementation complete (2026-05-13). All 10 tasks built, tested (Jest, all passing), and smoke-tested. Real house content ingested from `taynuilt.docx` into `data/knowledge.md`. Gap analysis run; `data/knowledge.md` annotated with `⚠️ FILL IN` markers for owner to complete before deployment. Next step: QNAP deployment (see SPEC.md §9.4).
 
 ---
 
 ## Decisions Made
+
+### 2026-05-13 — Implementation session (key patterns discovered)
+
+| Decision | Choice | Rationale |
+|---|---|---|
+| `dotenv` package | Added (`require('dotenv').config()` at top of server.js and both scripts) | Not in original plan; needed for local dev; Docker uses `env_file` |
+| `_client` injection | `chat()` accepts optional `_client` param, defaults to `new Anthropic()` | Avoids heavy mock setup; lets tests inject fake client directly |
+| Test isolation for knowledge.js | `KNOWLEDGE_PATH` env var + `_resetCache()` export + `jest.resetModules()` per test | Module-level cache made tests leak; reset + re-require is the pattern |
+| Test isolation for logger.js | `getLogPath()` function (not const) + `LOG_PATH` env var | Runtime env override; const would be evaluated once at module load |
+| `digest.start()` not auto-run | `start()` exported, only called in `server.js` under `require.main === module` | Prevents cron firing in tests; same guard prevents server.listen() in tests |
+| `jest.resetModules()` order | Must run BEFORE `require('nodemailer')` and `mockReturnValue` in `beforeEach` | Stale reference otherwise — mock set on pre-reset instance |
+| Markdown fence stripping | Strip ` ```json ``` ` fences before JSON.parse in chat.js; ` ```yaml ``` ` before writing in ingest.js | Claude sometimes wraps responses despite instructions |
+| YAML colon in arrival_brief | Double-quote all items in YAML (ingest prompt instructs this); knowledge.js also handles object fallback | `emoji Key: value` parsed as `{ key: value }` by gray-matter without quotes |
+
+### 2026-05-13 — Real content session
+
+| Item | Detail |
+|---|---|
+| House name | Taynuilt (Isle of Arran, Lamlash village) |
+| Ingested from | `taynuilt.docx` — 24 sections, 4 restricted sections |
+| Gap analysis | Run via `analyze-gaps.js`; `⚠️ FILL IN` markers added to `data/knowledge.md` at 10 locations |
+| Outstanding gaps | Owner contact details, check-in/out times & procedure, pets policy, fire safety, fault reporting, gas tank info, bin collection days, Co-op hours, Holy Isle ferry details, kayak hire details |
 
 ### 2026-05-13 — Full design session
 

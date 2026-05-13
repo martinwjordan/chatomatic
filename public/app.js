@@ -2,6 +2,8 @@ let history = [];
 let starters = null;
 let conversationStarted = false;
 
+marked.use({ breaks: true, gfm: true });
+
 function escapeHtml(text) {
   return String(text)
     .replace(/&/g, '&amp;')
@@ -31,7 +33,7 @@ function appendBotMessage(text) {
   avatar.textContent = '🏠';
   const div = document.createElement('div');
   div.className = 'message bot-message';
-  div.textContent = text;
+  div.innerHTML = DOMPurify.sanitize(marked.parse(text));
   wrapper.appendChild(avatar);
   wrapper.appendChild(div);
   document.getElementById('messages').appendChild(wrapper);
