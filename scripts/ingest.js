@@ -1,3 +1,4 @@
+require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 const mammoth = require('mammoth');
@@ -36,7 +37,7 @@ Requirements:
   - house_name: (from document, or "Holiday Home" if not found)
   - owner_contact: (from document, or "see welcome pack" if not found)
   - suggested_questions: (the 3-4 starter questions as a YAML list)
-  - arrival_brief: (exactly 5 bullet strings covering: keys, heating, bins, Wi-Fi, owner contact — format: "emoji Topic: detail")
+  - arrival_brief: (exactly 5 bullet strings covering: keys, heating, bins, Wi-Fi, owner contact — format: "emoji Topic: detail" — IMPORTANT: each item MUST be wrapped in double quotes in the YAML so colons inside the text are not misinterpreted, e.g. - "🔑 Keys: detail here")
 - Output ONLY the Markdown file content — no explanation, no preamble
 
 DOCUMENT:
@@ -44,7 +45,7 @@ ${rawText}`
     }]
   });
 
-  const structured = response.content[0].text.trim();
+  const structured = response.content[0].text.trim().replace(/^```(?:yaml|markdown|md)?\s*/i, '').replace(/\s*```$/, '');
   const outPath = path.join(__dirname, '../data/knowledge.md');
 
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
