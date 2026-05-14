@@ -392,15 +392,17 @@ CMD ["node", "server.js"]
 
 ### 9.2 `docker-compose.yml`
 
+Two services: the Node app, and a Caddy reverse proxy that provides SSL via Let's Encrypt.
+
 ```yaml
 services:
   chatomatic:
     build: .
     restart: always
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"      # LAN-only direct access; Caddy fronts the public URL
     volumes:
-      - /share/homes/admin/chatomatic/data:/app/data
+      - /share/Public/chatomatic/data:/app/data
     env_file:
       - .env
     healthcheck:
@@ -408,9 +410,22 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+
+  caddy:
+    image: caddy:2-alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "8443:8443"                # 8443 (not 443) because QTS itself holds 443
+    volumes:
+      - /share/Public/chatomatic/Caddyfile:/etc/caddy/Caddyfile:ro
+      - /share/Public/chatomatic/caddy_data:/data
+      - /share/Public/chatomatic/caddy_config:/config
+    depends_on:
+      - chatomatic
 ```
 
-The volume path `/share/homes/admin/chatomatic/data` is a QNAP QTS example — adjust to match your NAS folder structure.
+Adjust `/share/Public/chatomatic/` to match your NAS folder structure if different.
 
 ### 9.3 `.env.example`
 
@@ -429,12 +444,36 @@ Copy to `.env` and fill in values. **Never commit `.env` to git.**
 
 ### 9.4 QNAP setup steps
 
-1. **Container Station** — import or build the image, create container from `docker-compose.yml`
-2. **Volume** — create the `data/` folder on the NAS, place `knowledge.md` inside
-3. **Application Portal** — add a reverse proxy rule: your domain → `localhost:3000`; enable Let's Encrypt SSL
-4. **QNAP DDNS** (or custom domain) — configure under Control Panel → Network → DDNS
-5. **Router** — forward ports 80 and 443 to the NAS IP (required for Let's Encrypt and external access)
-6. **Gmail App Password** — Google Account → Security → 2-Step Verification → App Passwords → generate one for "Chatomatic"
+**Caddyfile** at the project root provides SSL via Let's Encrypt with no QNAP-specific reverse proxy. (Newer QTS builds no longer ship Application Portal; even when present it adds complexity Caddy avoids.)
+
+```caddy
+{
+    http_port 80
+    https_port 8443
+}
+
+your-host.myqnapcloud.com {
+    reverse_proxy chatomatic:3000
+    encode gzip
+}
+```
+
+Setup steps:
+
+1. **Container Station** — install it from App Center if missing
+2. **Place project on NAS** — clone or copy to `/share/Public/chatomatic/` (or your preferred path; update volume paths in `docker-compose.yml` to match)
+3. **Volumes** — `mkdir -p data caddy_data caddy_config` inside the project folder; place `knowledge.md` inside `data/`
+4. **`.env`** — copy from `.env.example` and fill in real values
+5. **QNAP DDNS** — Control Panel → myQNAPcloud or Network & File Services → DDNS — choose a hostname; verify it resolves to your public IP
+6. **Edit `Caddyfile`** — replace `your-host.myqnapcloud.com` with your actual DDNS hostname
+7. **Router port forwards** — external 80 → NAS-LAN-IP:80, external 443 → NAS-LAN-IP:8443 (both TCP). Most consumer routers under NAT Forwarding / Virtual Servers / Port Forwarding.
+8. **Bring it up** — `cd /share/Public/chatomatic && docker compose up -d --build`
+9. **Watch Caddy log** for cert issuance — `docker logs -f chatomatic-caddy-1` — look for `certificate obtained successfully`
+10. **Gmail App Password** — Google Account → Security → 2-Step Verification → App Passwords → generate one for "Chatomatic"; put it in `.env` as `GMAIL_APP_PASSWORD`
+
+**Port choice rationale:** QTS binds host port 443 (`fcgi-pm` web server) and 8080 (admin UI), so Caddy can't reuse them. Port 80 on the NAS is typically free. The router does NAT translation (external 443 → NAS 8443) so the public URL stays clean — no port suffix.
+
+**If the LE cert challenge fails:** Either ISP is blocking port 80 inbound, or the router rule isn't applied. Caddy will fall back to TLS-ALPN-01 on port 443/8443 automatically — so as long as one of the two paths is reachable, the cert issues. Future renewals also work via either.
 
 ### 9.5 Updating the knowledge base
 
