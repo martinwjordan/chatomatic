@@ -1,0 +1,9 @@
+{
+	http_port 80
+	https_port 8443
+}
+
+nasfresh2000.myqnapcloud.com {
+	reverse_proxy chatomatic:3000
+	encode gzip
+}

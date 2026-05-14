@@ -3,9 +3,9 @@ services:
     build: .
     restart: always
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     volumes:
-      - /share/homes/admin/chatomatic/data:/app/data
+      - /share/Public/chatomatic/data:/app/data
     env_file:
       - .env
     healthcheck:
@@ -13,3 +13,16 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+
+  caddy:
+    image: caddy:2-alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "8443:8443"
+    volumes:
+      - /share/Public/chatomatic/Caddyfile:/etc/caddy/Caddyfile:ro
+      - /share/Public/chatomatic/caddy_data:/data
+      - /share/Public/chatomatic/caddy_config:/config
+    depends_on:
+      - chatomatic

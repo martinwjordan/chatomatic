@@ -10,11 +10,23 @@ Living document. Updated as decisions are made, revised, or reversed. Most recen
 
 **Why it exists:** More interactive than a static site; the question log tells the owner what guests care about and what's missing from the guide.
 
-**Current status:** Implementation complete (2026-05-13). All 10 tasks built, tested (Jest, all passing), and smoke-tested. Real house content ingested from `taynuilt.docx` into `data/knowledge.md`. Gap analysis run; `data/knowledge.md` annotated with `⚠️ FILL IN` markers for owner to complete before deployment. Next step: QNAP deployment (see SPEC.md §9.4).
+**Current status:** Deployed to QNAP NAS at **https://nasfresh2000.myqnapcloud.com/** (2026-05-14). Caddy reverse proxy + Let's Encrypt SSL live. Remaining: owner to fill 11 `⚠️ FILL IN` markers in `data/knowledge.md` before sharing URL with real guests.
 
 ---
 
 ## Decisions Made
+
+### 2026-05-14 — QNAP deployment session
+
+| Decision | Choice | Rationale |
+|---|---|---|
+| Reverse proxy | Caddy (`caddy:2-alpine`) in a sibling container | QTS has no built-in reverse proxy on this NAS; Application Portal not installed; Nginx Proxy Manager has more moving parts |
+| Caddy host ports | 80 + 8443 (not 80 + 443) | QTS itself binds port 443 (`fcgi-pm`); 8080 is also taken by QTS admin |
+| Router NAT | External 443 → NAS:8443, external 80 → NAS:80 | TP-Link EX820V Virtual Server rules; lets public URL omit port suffix |
+| Chatomatic exposure | Bound to `127.0.0.1:3000:3000`, not `0.0.0.0` | LAN-only direct access kept for debugging; Caddy is the public entrypoint |
+| NAS path | `/share/Public/chatomatic/` | User's existing layout — replaces the example `/share/homes/admin/chatomatic` in earlier docs |
+| Cert challenge | TLS-ALPN-01 (auto-fallback) succeeded; HTTP-01 also viable | Both work; Caddy retries across challenge types automatically |
+| Caddy storage | Bind-mounted `caddy_data/` + `caddy_config/` next to project | Persists Let's Encrypt cert across container rebuilds |
 
 ### 2026-05-13 — Implementation session (key patterns discovered)
 
